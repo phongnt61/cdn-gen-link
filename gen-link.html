@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWT URL Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.25/jsrsasign-all-min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    label, input, button {
+      display: block;
+      margin-bottom: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .output {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      word-wrap: break-word;
+    }
+    .output p {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>JWT URL Generator</h1>
+    <label for="secretKey">Secret Key:</label>
+    <input type="text" id="secretKey" placeholder="Enter your secret key" value="your_secret_key_here">
+    
+    <label for="resourceId">Resource ID:</label>
+    <input type="text" id="resourceId" placeholder="Enter the resource ID" value="192">
+    
+    <button onclick="generateUrls()">Generate URLs</button>
+    
+    <div class="output" id="output">
+      <!-- Generated URLs will appear here -->
+    </div>
+  </div>
+
+  <script>
+    function generateUrls() {
+      // Get user inputs
+      const secretKey = document.getElementById('secretKey').value;
+      const resourceId = document.getElementById('resourceId').value;
+
+      // Define the stream types and their corresponding extensions
+      const streamTypes = [
+        { type: "CMAF_Clean_MHL_2s", extension: "m3u8" },
+        { type: "CMAF_Clean_MHL_2s", extension: "mpd" },
+        { type: "HLS_Clean_MHL_2s", extension: "m3u8" }
+      ];
+
+      // Clear previous output
+      const outputDiv = document.getElementById('output');
+      outputDiv.innerHTML = "";
+
+      // Generate URLs for each stream type
+      streamTypes.forEach(stream => {
+        // Define the base URL
+        const baseUrl = `https://rr1-ateme.tv360.vn/live/eds/${resourceId}/${stream.type}/${resourceId}.${stream.extension}`;
+
+        // Define the payload
+        const payload = {
+          exp: Math.floor(Date.now() / 1000) + 3600, // Expires in 1 hour
+          path: `/live/eds/${resourceId}/${stream.type}/`
+        };
+
+        // Generate the JWT token
+        const header = { alg: 'HS512', typ: 'JWT' };
+        const sHeader = JSON.stringify(header);
+        const sPayload = JSON.stringify(payload);
+        const sJWT = KJUR.jws.JWS.sign('HS512', sHeader, sPayload, secretKey);
+
+        // Build the final URL
+        const urlWithToken = `${baseUrl}?cdntoken=${sJWT}`;
+
+        // Display the result
+        outputDiv.innerHTML += `
+          <p><strong>Stream Type:</strong> ${stream.type}</p>
+
+          <p><strong>Generated URL:</strong> <a href="${urlWithToken}" target="_blank">${urlWithToken}</a></p>
+          <hr>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>
